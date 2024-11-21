@@ -4,64 +4,105 @@ import type { IItem } from "@/types/item.ts";
 
 import userItemsMocks from "@/mocks/userItems.json";
 import itemsMocks from "@/mocks/items.json";
+import ItemList from "@/components/common/ItemList.vue";
+import SelectedUserItemsComponent from "@/components/user-items/SelectedUserItems.vue";
+import SelectedItemComponent from "@/components/item/SelectedItem.vue";
+
+const MAX_USER_ITEMS = 6;
 
 const userItems = userItemsMocks as IItem[];
 const items = itemsMocks as IItem[];
 
-const MAX_USER_ITEMS = 6;
-const selectedUserItems = ref<Array<IItem> | null>(null);
+const selectedUserItems = ref<IItem[] | null>(null);
 const selectedItem = ref<IItem | null>(null);
+
+const handleUserItemDeselect = (itemDeselect: IItem) => {
+  if (!selectedUserItems.value?.length) {
+    return;
+  }
+
+  const items = selectedUserItems.value.filter(
+    (item) => item.id !== itemDeselect.id,
+  );
+
+  if (items.length > 0) {
+    selectedUserItems.value = items;
+    return;
+  }
+  selectedUserItems.value = null;
+};
+
+const handleItemDeselect = () => {
+  selectedItem.value = null;
+};
+
+const handleUserItemSelect = (itemSelected: IItem) => {
+  if (!selectedUserItems.value?.length) {
+    selectedUserItems.value = [itemSelected];
+    return;
+  }
+
+  const index = selectedUserItems.value.findIndex(
+    (item) => item.id === itemSelected.id,
+  );
+
+  if (index < 0 && selectedUserItems.value.length < MAX_USER_ITEMS) {
+    selectedUserItems.value = [...selectedUserItems.value, itemSelected];
+    return;
+  }
+
+  selectedUserItems.value = selectedUserItems.value.filter(
+    (item) => item.id !== itemSelected.id,
+  );
+};
+
+const handleItemSelect = (item: IItem) => {
+  selectedItem.value = selectedItem.value?.id === item.id ? null : item;
+};
 </script>
 
 <template>
   <main>
     <div class="home-page">
-      <div class="home-page__selected-items selected-items">
-        <div class="selected-items__user-items user-items">
-          Слева - выбранные вещи из вещей пользователя (блок снизу-слева)
-          <ul class="user-items__list">
-            <li v-for="userItem in selectedUserItems" :key="userItem.id">
-              {{ userItem.name }}
-            </li>
-          </ul>
-          <span class="user-items__caption">
-            {{ `${selectedUserItems?.length || 0} / ${MAX_USER_ITEMS}` }}
-          </span>
-          {{ selectedUserItems }}
-        </div>
+      <SelectedUserItemsComponent
+        class="home-page__selected-user-items"
+        :data="selectedUserItems"
+        :max-items="MAX_USER_ITEMS"
+        @item-select="handleUserItemDeselect"
+      />
 
-        <div class="selected-items__one-item one-item">
-          <div class="one-item__wrapper">
-            {{ selectedItem?.name }}
-          </div>
-        </div>
-      </div>
+      <SelectedItemComponent
+        class="home-page__selected-item"
+        :item="selectedItem"
+        @item-select="handleItemDeselect"
+      />
 
-      <div class="home-page__all-items all-items">
-        <ul class="all-items__user-item-list user-item-list">
-          <li>
-            Снизу-слева можно выбрать от 1 до 6 вещей, которые должны
-            отображаться в верхней левой части в порядке выбора.
-          </li>
-          <li
-            class="user-item-list__item"
-            v-for="userItem in userItems"
-            :key="userItem.id"
-          >
-            {{ userItem.name }}
-          </li>
-        </ul>
-
-        <ul class="all-items__item-list item-list">
-          <li>
-            Снизу-справа можно выбрать одновременно только 1 вещь, которая
-            должна отображаться справа-сверху.
-          </li>
-          <li class="item-list__item" v-for="item in items" :key="item.id">
-            {{ item.name }}
-          </li>
-        </ul>
-      </div>
+      <ItemList
+        class="all-items__user-item-list"
+        :items="userItems"
+        @item-select="handleUserItemSelect"
+      />
+      <ItemList
+        class="all-items__item-list"
+        :items="items"
+        @item-select="handleItemSelect"
+      />
     </div>
   </main>
 </template>
+
+<style scoped>
+.home-page {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: 320px auto;
+  row-gap: 50px;
+  column-gap: 50px;
+
+  & > div,
+  & > ul {
+    border: 2px solid #ccc;
+    border-radius: 2px;
+  }
+}
+</style>
